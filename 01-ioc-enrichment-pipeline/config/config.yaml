@@ -1,0 +1,124 @@
+# IOC Enrichment Pipeline — Example Configuration
+# Copy to config/config.yaml and fill in your API keys.
+# All API keys can also be set via environment variables (highest priority).
+
+pipeline:
+  # Maximum number of IOCs processed concurrently
+  concurrency: 20
+  # Per-provider HTTP timeout in seconds
+  provider_timeout: 30
+  # Max retry attempts per provider request
+  max_retries: 3
+  # Log level: DEBUG, INFO, WARNING, ERROR  |  env: LOG_LEVEL
+  log_level: "INFO"
+  # Directory for output files
+  output_dir: "./output"
+  # Minimum risk score to include in batch results (0 = include all)
+  min_risk_score: 0
+  # Pipeline version string embedded in all results
+  version: "1.0.0"
+
+providers:
+  virustotal:
+    enabled: true
+    # env: VT_API_KEY
+    api_key: "1774b004a3f9969962781db9bdaeb46dc8ee00a46efc5e97aa6e868914262b6c"
+    base_url: "https://www.virustotal.com/api/v3"
+    # VirusTotal free tier: 4 req/s; premium: higher
+    rate_limit_rps: 4.0
+    supported_types:
+      - ipv4
+      - ipv6
+      - domain
+      - url
+      - md5
+      - sha1
+      - sha256
+
+  abuseipdb:
+    enabled: true
+    # env: ABUSEIPDB_API_KEY
+    api_key: "fb668ad4c23fe1a611061368f82618cc40c23e2df816e66931cb4b18614ccd15090336a0d40cd56b"
+    base_url: "https://api.abuseipdb.com/api/v2"
+    rate_limit_rps: 1.0
+    # Include reports from the last N days
+    max_age_days: 90
+    supported_types:
+      - ipv4
+      - ipv6
+
+  shodan:
+    enabled: true
+    # env: SHODAN_API_KEY
+    api_key: "l9ayLUiwv6uEx1mZevF8hYsnUnRt1DcT"
+    base_url: "https://api.shodan.io"
+    rate_limit_rps: 1.0
+    supported_types:
+      - ipv4
+      - ipv6
+
+  otx:
+    enabled: true
+    # env: OTX_API_KEY
+    api_key: "fd7f5cae7bbaa158ee04644d0e5ff96479df3dfa401ec40b70bde8cda49f8021"
+    base_url: "https://otx.alienvault.com/api/v1"
+    rate_limit_rps: 10.0
+    supported_types:
+      - ipv4
+      - ipv6
+      - domain
+      - url
+      - md5
+      - sha1
+      - sha256
+
+  urlscan:
+    enabled: true
+    # env: URLSCAN_API_KEY
+    api_key: "019db1df-9449-73c8-93d8-f8b5d7f9f386"
+    base_url: "https://urlscan.io/api/v1"
+    rate_limit_rps: 5.0
+    supported_types:
+      - url
+      - domain
+
+scoring:
+  weights:
+    # Feature weights — should sum to 1.0
+    malicious_engine_ratio: 0.35   # VirusTotal engine agreement
+    abuse_confidence_score: 0.25   # AbuseIPDB community confidence
+    community_pulse_count: 0.15    # OTX threat intelligence pulses
+    historical_reports: 0.10       # Combined report history
+    open_ports_risk: 0.10          # Shodan high-risk port exposure
+    urlscan_verdict: 0.05          # URLScan.io verdict score
+
+  risk_bands:
+    # Minimum score (0-100) required for each band
+    CRITICAL: 90
+    HIGH: 70
+    MEDIUM: 40
+    LOW: 20
+    INFO: 0
+
+misp:
+  # MISP instance URL  |  env: MISP_URL
+  url: ""
+  # MISP API key  |  env: MISP_API_KEY
+  api_key: ""
+  verify_ssl: true
+  # Event distribution level (0=Organisation only, 1=Community, 2=Connected, 3=All)
+  distribution: 0
+  enrichment_tag: "tlp:white"
+
+output:
+  # Supported formats: json, ndjson, csv, table
+  formats:
+    - json
+    - ndjson
+  # Include raw provider API responses in output
+  include_raw_responses: false
+  # Pretty-print JSON output (false for machine consumption)
+  pretty_json: true
+  # Sort output by this field
+  sort_by: "risk_score"
+  sort_descending: true
