@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Any
 
 import yaml
+from dotenv import load_dotenv
 
 
 @dataclass
@@ -199,9 +200,12 @@ _ENV_MAP: dict[str, str] = {
 
 
 def load_config(config_path: str | Path | None = None) -> AppConfig:
-    """Load config from defaults, YAML file, then environment variable overrides.
+    """Load config from defaults, YAML file, secrets.pem, then environment variable overrides.
 
     Search order for YAML: explicit path → ./config/config.yaml → ./config.yaml.
+    After loading YAML, secrets.pem is loaded from the same directory as the config file
+    (or config/ by default) and its KEY=VALUE pairs are injected into the environment
+    without overriding variables already set in the shell.
     Environment variables always take highest priority.
     """
     config = AppConfig()
@@ -211,11 +215,24 @@ def load_config(config_path: str | Path | None = None) -> AppConfig:
         search_paths.append(Path(config_path))
     search_paths += [Path("config/config.yaml"), Path("config.yaml")]
 
+    loaded_config_dir: Path | None = None
     for candidate in search_paths:
         if candidate.exists():
             with candidate.open() as fh:
                 data = yaml.safe_load(fh) or {}
             _apply_dict(config, data)
+            loaded_config_dir = candidate.parent
+            break
+
+    # Load secrets.pem from the config directory (non-overriding: shell env vars win).
+    secrets_candidates: list[Path] = []
+    if loaded_config_dir:
+        secrets_candidates.append(loaded_config_dir / "secrets.pem")
+    secrets_candidates += [Path("config/secrets.pem"), Path("secrets.pem")]
+
+    for secrets_path in secrets_candidates:
+        if secrets_path.exists():
+            load_dotenv(secrets_path, override=False)
             break
 
     for env_var, dotted_path in _ENV_MAP.items():
