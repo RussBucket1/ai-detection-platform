@@ -1,0 +1,36 @@
+THREAT INTELLIGENCE REPORT — MIMIKATZ CREDENTIAL THEFT TOOL
+Source: SOC Tier 3 Analysis | Classification: Internal | Date: 2024-03-15
+
+During post-breach analysis, forensic investigators confirmed deployment of the
+Mimikatz credential theft toolkit across three domain-joined Windows workstations.
+The tool was executed under the context of a compromised domain administrator account.
+
+Observed Execution Patterns (Windows Security Event ID 4688, Sysmon Event ID 1):
+
+Direct Execution:
+- Process: mimikatz.exe (renamed variants observed: mimi.exe, m64.exe, notmimikatz.exe)
+- Parent processes: cmd.exe, powershell.exe, wscript.exe
+- Command-line arguments observed:
+  * privilege::debug
+  * sekurlsa::logonpasswords
+  * sekurlsa::wdigest
+  * lsadump::sam
+  * lsadump::dcsync /domain:corp.internal /all
+  * token::elevate
+
+PowerShell-based Execution (Invoke-Mimikatz):
+- CommandLine containing: "Invoke-Mimikatz", "Invoke-ReflectivePEInjection"
+- Script block logging (Event ID 4104) shows: DumpCreds, DumpCerts
+
+LSASS Process Injection (Sysmon Event ID 10 — ProcessAccess):
+- Source process performing OpenProcess with PROCESS_VM_READ on lsass.exe
+- CallTrace containing: UNKNOWN regions indicating reflective injection
+- GrantedAccess values: 0x1010, 0x1410, 0x143A on lsass.exe
+
+Registry Artifacts:
+- HKLM\SYSTEM\CurrentControlSet\Control\SecurityProviders\WDigest
+  UseLogonCredential set to 1 (enabling cleartext credential caching)
+
+High-confidence detection: any process_creation event where CommandLine contains
+"sekurlsa::", "lsadump::", or "privilege::debug" should be treated as confirmed
+credential dumping activity requiring immediate incident response.

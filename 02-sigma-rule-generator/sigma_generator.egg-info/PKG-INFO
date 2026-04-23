@@ -1,0 +1,33 @@
+Metadata-Version: 2.4
+Name: sigma-generator
+Version: 1.0.0
+Summary: AI-powered SIGMA detection rule generator using Claude
+Author: AI Detection Platform
+Classifier: Development Status :: 4 - Beta
+Classifier: Intended Audience :: Information Technology
+Classifier: Topic :: Security
+Classifier: Programming Language :: Python :: 3.11
+Classifier: Programming Language :: Python :: 3.12
+Requires-Python: >=3.11
+Requires-Dist: anthropic<1.0.0,>=0.25.0
+Requires-Dist: pydantic<3.0.0,>=2.5.0
+Requires-Dist: pydantic-settings<3.0.0,>=2.1.0
+Requires-Dist: click<9.0.0,>=8.1.7
+Requires-Dist: rich<14.0.0,>=13.7.0
+Requires-Dist: pyyaml<7.0.0,>=6.0.1
+Requires-Dist: python-dotenv<2.0.0,>=1.0.0
+Requires-Dist: ruamel.yaml<1.0.0,>=0.18.0
+Requires-Dist: jinja2<4.0.0,>=3.1.3
+Requires-Dist: orjson<4.0.0,>=3.9.10
+Requires-Dist: structlog<25.0.0,>=24.1.0
+Provides-Extra: dev
+Requires-Dist: pytest<8.0.0,>=7.4.4; extra == "dev"
+Requires-Dist: pytest-asyncio<1.0.0,>=0.23.3; extra == "dev"
+Requires-Dist: pytest-mock<4.0.0,>=3.12.0; extra == "dev"
+Requires-Dist: pytest-cov<5.0.0,>=4.1.0; extra == "dev"
+Dynamic: author
+Dynamic: classifier
+Dynamic: provides-extra
+Dynamic: requires-dist
+Dynamic: requires-python
+Dynamic: summary

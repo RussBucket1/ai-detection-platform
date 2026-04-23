@@ -1,0 +1,35 @@
+THREAT INTELLIGENCE REPORT — MODERN RANSOMWARE PRE-ENCRYPTION BEHAVIOR
+Incident Type: Ransomware Deployment | Variant: BlackCat/ALPHV-like | TLP: WHITE
+
+Analysis of ransomware samples and post-incident forensics reveal consistent
+pre-encryption preparation behaviors. These occur in the 15-30 minute window
+before file encryption begins and represent the highest-value detection opportunity.
+
+Shadow Copy Deletion (Sysmon Event ID 1 / Windows Security 4688):
+- vssadmin.exe Delete Shadows /All /Quiet
+- vssadmin.exe resize shadowstorage /for=C: /on=C: /maxsize=401MB
+- wmic.exe shadowcopy delete
+- PowerShell: Get-WmiObject Win32_ShadowCopy | Remove-WmiObject
+- wbadmin.exe delete catalog -quiet
+- wbadmin.exe delete systemstatebackup -deleteOldest
+
+Backup and Recovery Disruption:
+- bcdedit.exe /set {default} bootstatuspolicy ignoreallfailures
+- bcdedit.exe /set {default} recoveryenabled no
+- wbadmin.exe delete catalog -quiet
+- Deletion of .bak and .vhd files via cmd.exe /c del commands
+
+Network Share Enumeration Before Encryption (Sysmon Network Events):
+- net.exe view /all
+- net.exe view /domain
+- PowerShell: Get-SmbShare, Get-WmiObject -Class Win32_Share
+- arp.exe -a (ARP cache enumeration for lateral target discovery)
+
+File System Reconnaissance:
+- cmd.exe /c dir /s /b \\network_share\* > C:\Windows\Temp\shares.txt
+- Enumeration of drives via fsutil.exe fsinfo drives
+
+Detection Priority: The combination of vssadmin shadow deletion with bcdedit
+recovery disabling within a 60-second timeframe is a near-certain ransomware
+pre-encryption indicator with extremely low false positive rates in enterprise
+environments. Alert on any single behavior, escalate on combination.

@@ -1,0 +1,4 @@
+02-sigma-rule-generator/.env
+
+01-ioc-enrichment-pipeline/config/config.yaml
+01-ioc-enrichment-pipeline/config/secrets.pem

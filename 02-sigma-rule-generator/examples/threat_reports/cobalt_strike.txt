@@ -1,0 +1,32 @@
+THREAT INTELLIGENCE REPORT — COBALT STRIKE BEACON ACTIVITY
+Incident Reference: IR-2024-0847 | Severity: Critical | TLP: AMBER
+
+During a recent incident response engagement, analysts identified active Cobalt Strike
+beacon infrastructure operating within the corporate network. The threat actor gained
+initial access via a spear-phishing email containing a malicious macro-enabled document.
+
+Post-exploitation behavior was observed across multiple endpoints with the following
+indicators in Windows Sysmon and Security event logs:
+
+Process Execution:
+- rundll32.exe spawning from mshta.exe with no command-line arguments
+- powershell.exe launched with encoded commands: "-EncodedCommand" or "-enc" flags
+  followed by base64-encoded payloads containing "DownloadString" or "IEX"
+- cmd.exe spawning from WINWORD.EXE with suspicious child processes
+
+Named Pipe Communication (Sysmon Event ID 17/18):
+- Named pipes observed: \\.\pipe\msagent_*, \\.\pipe\MSSE-*, \\.\pipe\postex_*
+- Inter-process communication via \\.\pipe\ntsvcs
+
+Credential Harvesting Activity:
+- LSASS process (lsass.exe) accessed by non-system processes via OpenProcess
+- Presence of sekurlsa module artifacts in process memory dumps
+- MiniDump API calls targeting lsass.exe PID
+
+Network Indicators:
+- Beacon check-ins to over HTTPS (port 443) with 60-second jitter
+- DNS requests to subdomains with high-entropy names (e.g., a3f2k.malicious-cdn.net)
+
+Analysts should prioritize detection of the named pipe patterns and LSASS access
+behaviors, as these represent the highest-fidelity indicators with lowest false
+positive rates in enterprise Windows environments.

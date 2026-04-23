@@ -1,0 +1,35 @@
+llm:
+  # Anthropic API key — override with env var ANTHROPIC_API_KEY (recommended)
+  api_key: ""
+  # Model to use. Current default: claude-sonnet-4-6
+  # Env override: SIGMA_MODEL
+  model: "claude-sonnet-4-6"
+  # Maximum tokens in the LLM response (4096 is sufficient for 2-3 rules)
+  max_tokens: 4096
+  # Temperature 0.0 = deterministic output (recommended for rule generation)
+  temperature: 0.0
+
+output:
+  # Directory where generated rule files are written
+  # Env override: SIGMA_OUTPUT_DIR
+  output_dir: "./output"
+  # Output formats to write: yaml, json, or both
+  formats:
+    - yaml
+    - json
+  # Pretty-print JSON output with indentation
+  pretty_json: true
+
+generator:
+  # Default author field on generated rules
+  # Env override: SIGMA_AUTHOR
+  default_author: "AI Detection Platform"
+  # Default status for AI-generated rules (always start experimental)
+  default_status: "experimental"
+  # Filter out rules below this confidence score (0.0 = keep all)
+  min_confidence_threshold: 0.0
+  # Run validation after generation (recommended: true)
+  validate_output: true
+  # Log level: DEBUG, INFO, WARNING, ERROR
+  # Env override: LOG_LEVEL
+  log_level: "INFO"

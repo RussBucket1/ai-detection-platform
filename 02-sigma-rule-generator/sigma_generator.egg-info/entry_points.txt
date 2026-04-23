@@ -1,0 +1,2 @@
+[console_scripts]
+sigma-generator = sigma_generator.__main__:main
