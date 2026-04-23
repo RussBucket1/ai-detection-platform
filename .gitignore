@@ -2,3 +2,4 @@
 
 01-ioc-enrichment-pipeline/config/config.yaml
 01-ioc-enrichment-pipeline/config/secrets.pem
+02-sigma-rule-generator/config/config.yaml

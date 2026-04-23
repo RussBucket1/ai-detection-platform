@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Any
 
 import yaml
+from dotenv import load_dotenv
 
 
 @dataclass
@@ -91,11 +92,26 @@ def load_config(config_path: str | Path | None = None) -> AppConfig:
         paths_to_try.append(Path(env_path))
     paths_to_try.append(Path("config/config.yaml"))
 
+    loaded_config_dir: Path | None = None
     for path in paths_to_try:
         if path.exists():
             with open(path) as fh:
                 loaded = yaml.safe_load(fh) or {}
             raw = _deep_merge(raw, loaded)
+            loaded_config_dir = path.parent
+            break
+
+    # Load .env from the project root (parent of config/) or current directory.
+    # override=False means variables already set in the shell always win.
+    dotenv_candidates: list[Path] = []
+    if loaded_config_dir:
+        dotenv_candidates.append(loaded_config_dir.parent / ".env")
+        dotenv_candidates.append(loaded_config_dir / ".env")
+    dotenv_candidates.append(Path(".env"))
+
+    for dotenv_path in dotenv_candidates:
+        if dotenv_path.exists():
+            load_dotenv(dotenv_path, override=False)
             break
 
     llm_raw = raw.get("llm", {})
