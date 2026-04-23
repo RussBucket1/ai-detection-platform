@@ -1,0 +1,51 @@
+title: Cobalt Strike Beacon Staging via Encoded PowerShell from Office or MSHTA Parent
+id: ab3127d9-e52d-4984-863c-cf8f502c761d
+status: experimental
+description: Detects PowerShell launched with encoded command flags containing download-and-execute patterns (DownloadString combined with IEX/Invoke-Expression) from suspicious parent processes including Microsoft Office applications, mshta.exe, and rundll32.exe. This pattern is consistent with Cobalt Strike macro-based initial access and stager execution as documented in IR-2024-0847, where spear-phishing documents triggered this execution chain.
+author: AI Detection Platform
+date: 2026/04/23
+modified: 2026/04/23
+references:
+- https://attack.mitre.org/techniques/T1059/001/
+- https://attack.mitre.org/techniques/T1566/001/
+- https://www.cobaltstrike.com/blog/staged-vs-stageless-handlers/
+- https://github.com/SigmaHQ/sigma/blob/master/rules/windows/process_creation/proc_creation_win_powershell_encoded_cmd.yml
+- https://thedfirreport.com/2021/08/29/cobalt-strike-a-defenders-guide/
+tags:
+- attack.execution
+- attack.t1059.001
+- attack.defense_evasion
+- attack.t1027
+- attack.t1027.010
+- attack.initial_access
+- attack.t1566.001
+logsource:
+  category: process_creation
+  product: windows
+  service: sysmon
+detection:
+  selection:
+    Image|endswith:
+    - \powershell.exe
+    - \pwsh.exe
+    CommandLine|contains|all:
+    - DownloadString
+    CommandLine|contains:
+    - -EncodedCommand
+    - '-enc '
+    - '-ec '
+    ParentImage|endswith:
+    - \WINWORD.EXE
+    - \EXCEL.EXE
+    - \POWERPNT.EXE
+    - \OUTLOOK.EXE
+    - \mshta.exe
+    - \rundll32.exe
+    - \wscript.exe
+    - \cscript.exe
+  condition: selection_image and (selection_cmdline_download or selection_cmdline_enc) and selection_parent
+falsepositives:
+- Legitimate IT automation scripts launched from scheduled tasks that happen to use encoded commands — verify ParentImage is not a task scheduler or SYSTEM-context process
+- Software deployment tools (SCCM, Intune) that invoke PowerShell with encoded commands from Office-adjacent processes during software packaging workflows
+- Developer workflows using Office automation with PowerShell integration in test environments
+level: high

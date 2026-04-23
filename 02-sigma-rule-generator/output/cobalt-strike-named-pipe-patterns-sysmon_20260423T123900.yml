@@ -1,0 +1,35 @@
+title: Cobalt Strike Named Pipe Patterns Detected via Sysmon
+id: 1cd47b5f-6c83-436f-93d1-210bc5349b5c
+status: experimental
+description: Detects named pipe creation or connection events matching known Cobalt Strike default and common post-exploitation pipe names including msagent_, MSSE-, postex_, and ntsvcs. Cobalt Strike beacons use named pipes for inter-process communication and lateral movement via SMB. These pipe names are high-fidelity indicators with very low false positive rates in enterprise environments.
+author: AI Detection Platform
+date: 2026/04/23
+modified: 2026/04/23
+references:
+- https://attack.mitre.org/techniques/T1071/
+- https://www.cobaltstrike.com/blog/learn-pipe-fitting-for-all-of-your-offense-projects/
+- https://hausec.com/2021/07/26/cobalt-strike-and-tradecraft/
+- https://github.com/SigmaHQ/sigma/blob/master/rules/windows/pipe_created/pipe_created_mal_cobaltstrike.yml
+tags:
+- attack.command_and_control
+- attack.t1071
+- attack.t1071.001
+- attack.lateral_movement
+- attack.t1021.002
+logsource:
+  category: pipe_created
+  product: windows
+  service: sysmon
+detection:
+  selection:
+    PipeName|startswith:
+    - \msagent_
+    - \MSSE-
+    - \postex_
+    PipeName|contains:
+    - \ntsvcs
+  condition: selection_startswith or selection_contains
+falsepositives:
+- Legitimate Microsoft services may use ntsvcs pipe name in rare configurations — validate against known-good baseline
+- Security testing tools or red team exercises using Cobalt Strike in authorized penetration tests
+level: high

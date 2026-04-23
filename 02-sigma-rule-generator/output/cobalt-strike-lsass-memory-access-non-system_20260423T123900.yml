@@ -1,0 +1,49 @@
+title: Cobalt Strike LSASS Memory Access by Non-System Process
+id: 22ee8d2c-9c83-44e9-8b2a-60dc72793f21
+status: experimental
+description: Detects OpenProcess calls targeting lsass.exe from non-system, non-antivirus processes, a primary indicator of Cobalt Strike sekurlsa module or Mimikatz-style credential harvesting. The rule specifically looks for processes accessing LSASS with suspicious granted access rights used for memory reading and MiniDump operations. This behavior is consistent with the sekurlsa::logonpasswords and sekurlsa::minidump Cobalt Strike BOF techniques observed in IR-2024-0847.
+author: AI Detection Platform
+date: 2026/04/23
+modified: 2026/04/23
+references:
+- https://attack.mitre.org/techniques/T1003/001/
+- https://www.cobaltstrike.com/blog/cobalt-strike-and-credential-access/
+- https://github.com/SigmaHQ/sigma/blob/master/rules/windows/process_access/proc_access_win_lsass_memdump.yml
+- https://docs.microsoft.com/en-us/windows/win32/procthread/process-security-and-access-rights
+tags:
+- attack.credential_access
+- attack.t1003
+- attack.t1003.001
+logsource:
+  category: process_access
+  product: windows
+  service: sysmon
+detection:
+  selection:
+    TargetImage|endswith:
+    - \lsass.exe
+    GrantedAccess|contains:
+    - '0x1010'
+    - '0x1410'
+    - '0x147a'
+    - '0x143a'
+    - '0x1438'
+    - '0x1fffff'
+    - '0x1f1fff'
+    SourceImage|endswith:
+    - \wmiprvse.exe
+    - \taskmgr.exe
+    - \lsm.exe
+    - \csrss.exe
+    - \wininit.exe
+    - \services.exe
+    - \MsMpEng.exe
+    - \SenseIR.exe
+    - \CylanceSvc.exe
+    - \CrowdStrike\CSFalconService.exe
+  condition: selection_target and selection_access and not filter_legit
+falsepositives:
+- Endpoint Detection and Response (EDR) agents such as CrowdStrike Falcon, Microsoft Defender for Endpoint (MsMpEng.exe, SenseIR.exe), and CylanceSvc.exe legitimately access LSASS — these are excluded in the filter but verify your EDR process names match
+- Windows Task Manager (taskmgr.exe) when run by administrators to view process details may trigger this rule
+- Backup and monitoring agents that enumerate process memory for diagnostic purposes
+level: high
