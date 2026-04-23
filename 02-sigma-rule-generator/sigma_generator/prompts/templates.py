@@ -5,6 +5,9 @@ import re
 
 from jinja2 import Environment, StrictUndefined
 
+# autoescape=False is correct: output is plain text sent to an LLM, not HTML.
+# Enabling it would HTML-encode legitimate characters in threat intel content
+# (e.g., '&&' → '&amp;&amp;'). StrictUndefined catches missing variables early.
 _JINJA_ENV = Environment(undefined=StrictUndefined, autoescape=False)
 
 _IOC_PATTERN = re.compile(
