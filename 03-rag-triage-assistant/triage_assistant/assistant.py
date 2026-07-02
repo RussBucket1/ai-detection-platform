@@ -147,16 +147,29 @@ class TriageAssistant:
     # Ingestion delegation
     # -------------------------------------------------------------------------
 
+    def _validate_ingestion_path(self, path: str | Path) -> Path:
+        """Resolve and validate ingestion paths to stay within the configured safe root."""
+        safe_root = Path(self._config.vector_store.persist_directory).resolve()
+        candidate = Path(path)
+        resolved = (safe_root / candidate).resolve() if not candidate.is_absolute() else candidate.resolve()
+
+        try:
+            resolved.relative_to(safe_root)
+        except ValueError as exc:
+            raise ValueError(f"Path '{path}' is outside allowed ingestion root '{safe_root}'") from exc
+
+        return resolved
+
     async def ingest_iocs(self, path: str | Path) -> int:
         """Ingest IOC files from a file or directory path."""
-        p = Path(path)
+        p = self._validate_ingestion_path(path)
         if p.is_dir():
             return self._ioc_ingester.ingest_directory(p)
         return self._ioc_ingester.ingest_file(p)
 
     async def ingest_sigma_rules(self, path: str | Path) -> int:
         """Ingest SIGMA rule YAML files from a file or directory path."""
-        p = Path(path)
+        p = self._validate_ingestion_path(path)
         if p.is_dir():
             return self._sigma_ingester.ingest_directory(p)
         return self._sigma_ingester.ingest_file(p)
