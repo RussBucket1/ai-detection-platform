@@ -150,8 +150,16 @@ class TriageAssistant:
     def _validate_ingestion_path(self, path: str | Path) -> Path:
         """Resolve and validate ingestion paths to stay within the configured safe root."""
         safe_root = Path(self._config.vector_store.persist_directory).resolve()
-        candidate = Path(path)
-        resolved = (safe_root / candidate).resolve() if not candidate.is_absolute() else candidate.resolve()
+        candidate = Path(str(path).strip())
+
+        if not str(candidate):
+            raise ValueError("Path is required")
+        if candidate.is_absolute():
+            raise ValueError("Absolute paths are not allowed; provide a path relative to ingestion root")
+        if ".." in candidate.parts:
+            raise ValueError("Parent directory traversal is not allowed")
+
+        resolved = (safe_root / candidate).resolve()
 
         try:
             resolved.relative_to(safe_root)
