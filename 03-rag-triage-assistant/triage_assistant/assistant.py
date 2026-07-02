@@ -162,7 +162,7 @@ class TriageAssistant:
         if ".." in candidate.parts:
             raise ValueError("Parent directory traversal is not allowed")
 
-        resolved = (safe_root / candidate).resolve()
+        resolved = (safe_root / candidate).resolve()  # lgtm[py/path-injection] -- confined below via relative_to()
 
         try:
             resolved.relative_to(safe_root)
@@ -174,14 +174,14 @@ class TriageAssistant:
     async def ingest_iocs(self, path: str | Path) -> int:
         """Ingest IOC files from a file or directory path."""
         p = self._validate_ingestion_path(path)
-        if p.is_dir():
+        if p.is_dir():  # lgtm[py/path-injection] -- path was confined to safe_root by _validate_ingestion_path
             return self._ioc_ingester.ingest_directory(p)
         return self._ioc_ingester.ingest_file(p)
 
     async def ingest_sigma_rules(self, path: str | Path) -> int:
         """Ingest SIGMA rule YAML files from a file or directory path."""
         p = self._validate_ingestion_path(path)
-        if p.is_dir():
+        if p.is_dir():  # lgtm[py/path-injection] -- path was confined to safe_root by _validate_ingestion_path
             return self._sigma_ingester.ingest_directory(p)
         return self._sigma_ingester.ingest_file(p)
 
