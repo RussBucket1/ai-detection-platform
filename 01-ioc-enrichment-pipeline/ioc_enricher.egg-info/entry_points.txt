@@ -1,2 +1,0 @@
-[console_scripts]
-ioc-enricher = ioc_enricher.__main__:main
