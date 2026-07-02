@@ -7,6 +7,9 @@ on:
   pull_request:
     types: [opened, synchronize, reopened]
 
+permissions:
+  contents: read
+
 jobs:
   sonar-scan:
     name: SonarQube Scan
@@ -23,5 +26,7 @@ jobs:
 
       - name: Execute SonarQube Scan
         uses: sonarsource/sonarqube-scan-action@v4
+      - name: SonarQube Scan
+        uses: sonarsource/sonarqube-scan-action@v6
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
