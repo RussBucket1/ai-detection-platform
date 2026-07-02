@@ -1,31 +1,24 @@
-name: SonarQube Analysis
+name: Sonar Scanner Code Analysis
 
 on:
   push:
-    branches: [ "main" ]
+    branches:
+      - main
   pull_request:
-    branches: [ "main" ]
-
-permissions:
-  contents: read
+    types: [opened, synchronize, reopened]
 
 jobs:
-  sonarqube:
+  sonar-scan:
+    name: SonarQube Scan
     runs-on: ubuntu-latest
+    
     steps:
-      - name: Checkout code
+      - name: Checkout Source Code
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0 # Required for better relevancy of analysis
+          fetch-depth: 0 # Shallow clones must be disabled for relevant blame information
 
-      - name: SonarQube Scan
+      - name: Execute SonarQube Scan
         uses: sonarsource/sonarqube-scan-action@v4
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-
-#      - name: SonarQube Quality Gate Check
-#        uses: sonarsource/sonarqube-quality-gate-action@v1
-#        timeout-minutes: 5
-#        env:
-#          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-#          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
