@@ -1,0 +1,130 @@
+{
+  "triage_id": "c198c033-4a54-47b6-90d9-d6acf202847a",
+  "alert_id": "b4f02fb9-42e3-48d5-bf01-407d7ad21c24",
+  "verdict": "likely_true_positive",
+  "recommended_action": "investigate",
+  "severity_assessment": "high",
+  "confidence": 0.78,
+  "confidence_rationale": "The command line contains a Base64-encoded PowerShell payload (-enc JABQAF0g) combined with a DownloadString call via Net.WebClient, which is a classic download-and-execute pattern. The parent process is MSHTA, a known LOLBin used to proxy malicious execution. SIGMA Rule 1 (relevance 0.64) directly matches this exact behavioral pattern — encoded PowerShell with DownloadString launched from MSHTA — and is explicitly tagged for Cobalt Strike beacon staging. No IOC database hits reduce confidence slightly, but the behavioral pattern is highly specific and the SIGMA rule was purpose-built for this scenario. The absence of IOC matches may indicate a novel or private infrastructure not yet in threat intel feeds.",
+  "summary": "A PowerShell process was launched with a Base64-encoded command containing a Net.WebClient DownloadString call, with MSHTA as the parent process. This matches a high-confidence SIGMA rule for Cobalt Strike beacon staging via encoded PowerShell from MSHTA parent processes. The combination of LOLBin proxy execution (MSHTA), encoding obfuscation, and remote payload download is a well-documented initial access and execution pattern requiring immediate investigation.",
+  "analyst_notes": "The command line 'powershell.exe -enc JABQAF0g (New-Object Net.WebClient).DownloadString' exhibits three high-risk characteristics simultaneously: (1) Base64 encoding via -enc flag to evade command-line logging and AV, (2) Net.WebClient DownloadString indicating remote payload retrieval, and (3) MSHTA as the parent process — a signed Windows binary commonly abused to bypass application whitelisting and execute HTA files containing malicious VBScript/JScript. The partial Base64 'JABQAF0g' decodes to '$P]' in UTF-16LE, consistent with PowerShell variable assignment at the start of a script block, suggesting a larger encoded payload. SIGMA Rule 1 is the primary match and was specifically engineered to detect Cobalt Strike beacon staging via this exact chain. SIGMA Rules 2 and 3 (LSASS access and named pipe patterns) are lower relevance and likely retrieved due to Cobalt Strike association — they represent post-exploitation activity that may follow if this is a successful beacon stage. Kill chain placement: This is early-stage activity spanning Initial Access (T1566.001 via phishing delivering HTA) through Execution (T1059.001 PowerShell) with Defense Evasion (T1027/T1218.005). The lack of IOC matches does not reduce the behavioral severity — threat actors frequently rotate infrastructure. Priority actions: (1) Decode the full Base64 payload, (2) identify the download URL from process/network logs, (3) check for child processes spawned by powershell.exe, (4) review MSHTA parent process and what launched it (email client, browser, Office), (5) check for network connections from the host around the timestamp.",
+  "mitre_techniques": [
+    {
+      "technique_id": "T1218.005",
+      "technique_name": "Mshta",
+      "tactic": "Defense Evasion",
+      "confidence": 0.85
+    },
+    {
+      "technique_id": "T1059.001",
+      "technique_name": "PowerShell",
+      "tactic": "Execution",
+      "confidence": 0.9
+    },
+    {
+      "technique_id": "T1027",
+      "technique_name": "Obfuscated Files or Information",
+      "tactic": "Defense Evasion",
+      "confidence": 0.85
+    },
+    {
+      "technique_id": "T1027.010",
+      "technique_name": "Command Obfuscation",
+      "tactic": "Defense Evasion",
+      "confidence": 0.8
+    },
+    {
+      "technique_id": "T1105",
+      "technique_name": "Ingress Tool Transfer",
+      "tactic": "Command and Control",
+      "confidence": 0.75
+    },
+    {
+      "technique_id": "T1566.001",
+      "technique_name": "Spearphishing Attachment",
+      "tactic": "Initial Access",
+      "confidence": 0.55
+    }
+  ],
+  "context_matches": [
+    {
+      "source": "sigma_rules",
+      "document_id": "ab3127d9-e52d-4984-863c-cf8f502c761d",
+      "title": "Cobalt Strike Beacon Staging via Encoded PowerShell from Office or MSHTA Parent",
+      "relevance_score": 0.6385,
+      "excerpt": "SIGMA Rule: Cobalt Strike Beacon Staging via Encoded PowerShell from Office or MSHTA Parent| Logsource: windows process_creation sysmon | Detects: Detects PowerShell launched with encoded command flags containing download-and-execute patterns (DownloadString combined with IEX/Invoke-Expression) from suspicious parent processes including Microsof | Keywords: \\powershell.exe | \\pwsh.exe | DownloadString | -EncodedCommand | -enc  | -ec  | \\WINWORD.EXE | \\EXCEL.EXE | \\POWERPNT.EXE | \\OUTLOOK.EXE | \\"
+    },
+    {
+      "source": "sigma_rules",
+      "document_id": "22ee8d2c-9c83-44e9-8b2a-60dc72793f21",
+      "title": "Cobalt Strike LSASS Memory Access by Non-System Process",
+      "relevance_score": 0.3673,
+      "excerpt": "SIGMA Rule: Cobalt Strike LSASS Memory Access by Non-System Process| Logsource: windows process_access sysmon | Detects: Detects OpenProcess calls targeting lsass.exe from non-system, non-antivirus processes, a primary indicator of Cobalt Strike sekurlsa module or Mimikatz-style credential harvesting. The rule specifica | Keywords: \\lsass.exe | 0x1010 | 0x1410 | 0x147a | 0x143a | 0x1438 | 0x1fffff | 0x1f1fff | \\wmiprvse.exe | \\taskmgr.exe | \\lsm.exe | \\csrss.exe | \\wininit.exe | \\services.exe | "
+    },
+    {
+      "source": "sigma_rules",
+      "document_id": "1cd47b5f-6c83-436f-93d1-210bc5349b5c",
+      "title": "Cobalt Strike Named Pipe Patterns Detected via Sysmon",
+      "relevance_score": 0.342,
+      "excerpt": "SIGMA Rule: Cobalt Strike Named Pipe Patterns Detected via Sysmon| Logsource: windows pipe_created sysmon | Detects: Detects named pipe creation or connection events matching known Cobalt Strike default and common post-exploitation pipe names including msagent_, MSSE-, postex_, and ntsvcs. Cobalt Strike beacons use  | Keywords: \\msagent_ | \\MSSE- | \\postex_ | \\ntsvcs | Tags: attack.command_and_control, attack.t1071, attack.t1071.001, attack.lateral_movement, attack.t1021.002 | False positives: L"
+    },
+    {
+      "source": "mitre_attack",
+      "document_id": "T1218.005",
+      "title": "Mshta",
+      "relevance_score": 0.5172,
+      "excerpt": "MITRE ATT&CK T1218.005: Mshta | Tactic: Stealth | Platforms: Windows | Description: Adversaries may abuse mshta.exe to proxy execution of malicious .hta files and Javascript or VBScript through a trusted Windows utility. There are several examples of different types of threats leveraging mshta.exe during initial compromise and for execution of code (Citation: Cylance Dust Storm) (Citation: Red Canary HTA Abuse Part Deux) (Citation: FireEye Attacks Leveraging HTA) (Citation: Airbus Security Kovte"
+    },
+    {
+      "source": "mitre_attack",
+      "document_id": "T1546.007",
+      "title": "Netsh Helper DLL",
+      "relevance_score": 0.4682,
+      "excerpt": "MITRE ATT&CK T1546.007: Netsh Helper DLL | Tactic: Privilege Escalation | Platforms: Windows | Description: Adversaries may establish persistence by executing malicious content triggered by Netsh Helper DLLs. Netsh.exe (also referred to as Netshell) is a command-line scripting utility used to interact with the network configuration of a system. It contains functionality to add helper DLLs for extending functionality of the utility.(Citation: TechNet Netsh) The paths to registered netsh.exe helpe"
+    },
+    {
+      "source": "mitre_attack",
+      "document_id": "T1059.001",
+      "title": "PowerShell",
+      "relevance_score": 0.4268,
+      "excerpt": "MITRE ATT&CK T1059.001: PowerShell | Tactic: Execution | Platforms: Windows | Description: Adversaries may abuse PowerShell commands and scripts for execution. PowerShell is a powerful interactive command-line interface and scripting environment included in the Windows operating system.(Citation: TechNet PowerShell) Adversaries can use PowerShell to perform a number of actions, including discovery of information and execution of code. Examples include the <code>Start-Process</code> cmdlet which "
+    },
+    {
+      "source": "mitre_attack",
+      "document_id": "T1218.007",
+      "title": "Msiexec",
+      "relevance_score": 0.4257,
+      "excerpt": "MITRE ATT&CK T1218.007: Msiexec | Tactic: Stealth | Platforms: Windows | Description: Adversaries may abuse msiexec.exe to proxy execution of malicious payloads. Msiexec.exe is the command-line utility for the Windows Installer and is thus commonly associated with executing installation packages (.msi).(Citation: Microsoft msiexec) The Msiexec.exe binary may also be digitally signed by Microsoft.\n\nAdversaries may abuse msiexec.exe to launch local or network accessible MSI files. Msiexec.exe can "
+    },
+    {
+      "source": "mitre_attack",
+      "document_id": "T1574.014",
+      "title": "AppDomainManager",
+      "relevance_score": 0.3898,
+      "excerpt": "MITRE ATT&CK T1574.014: AppDomainManager | Tactic: Stealth | Platforms: Windows | Description: Adversaries may execute their own malicious payloads by hijacking how the .NET `AppDomainManager` loads assemblies. The .NET framework uses the `AppDomainManager` class to create and manage one or more isolated runtime environments (called application domains) inside a process to host the execution of .NET applications. Assemblies (`.exe` or `.dll` binaries compiled to run as .NET code) may be loaded i"
+    }
+  ],
+  "ioc_matches": [],
+  "sigma_rule_matches": [
+    "Cobalt Strike Beacon Staging via Encoded PowerShell from Office or MSHTA Parent",
+    "Cobalt Strike LSASS Memory Access by Non-System Process",
+    "Cobalt Strike Named Pipe Patterns Detected via Sysmon"
+  ],
+  "recommended_searches": [
+    "index=windows EventCode=4688 OR EventCode=1 ParentImage=*mshta.exe Image=*powershell.exe | table _time, host, user, ParentCommandLine, CommandLine | sort -_time",
+    "index=windows EventCode=4688 OR EventCode=1 host=<affected_host> earliest=-30m@m latest=+30m@m | eval decoded=if(match(CommandLine,\"-enc\"), \"encoded\", \"plain\") | table _time, Image, ParentImage, CommandLine, user | sort _time",
+    "index=windows EventCode=3 OR sourcetype=sysmon EventID=3 host=<affected_host> Image=*powershell.exe earliest=2026-07-02T13:45:00 latest=2026-07-02T14:30:00 | table _time, DestinationIp, DestinationPort, DestinationHostname, Image, user",
+    "index=windows EventCode=1 ParentImage=*powershell.exe host=<affected_host> earliest=2026-07-02T14:00:00 latest=2026-07-02T15:00:00 | table _time, Image, CommandLine, ParentCommandLine, user, host",
+    "index=windows EventCode=4688 OR EventCode=1 CommandLine=*DownloadString* OR CommandLine=*DownloadFile* OR CommandLine=*WebClient* | stats count by host, user, CommandLine | sort -count"
+  ],
+  "false_positive_indicators": [
+    "Legitimate software deployment or patch management tools occasionally use MSHTA to launch PowerShell with encoded commands — verify if the host is a managed endpoint with known deployment activity at this timestamp.",
+    "Security testing or red team exercises may generate this exact pattern — check the change management calendar and red team schedule for authorized activity on this host.",
+    "Some enterprise software installers (e.g., certain Java or Adobe updaters) have historically used HTA-based launchers that spawn PowerShell — correlate with software installation events (EventCode 11 or MSI logs) around the same time."
+  ],
+  "escalation_path": "Tier-3 IR team via ServiceNow P2 ticket if network connections to external IPs are confirmed from the host; escalate to P1 if child processes indicating beacon activity (named pipes, LSASS access, lateral movement) are discovered. EDR team should be engaged for immediate endpoint isolation if payload download is confirmed successful.",
+  "triaged_at": "2026-07-02T14:04:56.371996Z",
+  "triage_duration_ms": 36265.0,
+  "model_used": "claude-sonnet-4-6",
+  "context_documents_used": 8
+}

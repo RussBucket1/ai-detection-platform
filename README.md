@@ -76,9 +76,30 @@ sigma-generator batch --input-dir examples/threat_reports/ --output-dir ./output
 ---
 
 ### Module 03 — RAG Triage Assistant
-**Status: Planned**
+**Status: Complete**
 
-An LLM-powered alert triage assistant with retrieval-augmented generation. Ingests SIGMA rules (from Module 02) and threat intelligence reports as context, then answers analyst questions about active alerts — explaining why an alert fired, what the likely attack path is, and what to investigate next.
+An LLM-powered alert triage assistant with retrieval-augmented generation. Ingests enriched IOCs (Module 01), SIGMA rules (Module 02), and MITRE ATT&CK into three ChromaDB collections, then triages incoming SIEM alerts — explaining why an alert fired, the likely attack path, and what to investigate next.
+
+**Key capabilities:**
+- Splunk and Elastic webhook endpoints that normalize each SIEM's native alert payload into a common schema
+- Three-collection RAG retrieval (IOC enrichment, SIGMA rules, MITRE ATT&CK) with collection-specific query shaping
+- Local embeddings via SentenceTransformer (`all-MiniLM-L6-v2`) — no embedding API key required
+- Claude-powered triage reasoning producing a structured verdict, recommended action, severity, confidence with rationale, MITRE technique attribution, and follow-up SPL/KQL searches
+- FastAPI REST API (`/triage`, `/triage/splunk`, `/triage/elastic`, `/ingest/*`, `/health`) plus a Click CLI
+- Graceful degradation on malformed LLM output — falls back to a safe `needs_investigation` verdict instead of failing the request
+
+**Tech:** Python 3.11+, Anthropic SDK (claude-sonnet-4-6), ChromaDB, FastAPI, Pydantic v2, Jinja2, structlog, Click, Rich
+
+```bash
+cd 03-rag-triage-assistant
+pip install -r requirements.txt
+triage-assistant ingest mitre --cache-path ./data/mitre/enterprise-attack.json
+triage-assistant ingest iocs --path ../01-ioc-enrichment-pipeline/output/
+triage-assistant ingest sigma --path ../02-sigma-rule-generator/output/
+triage-assistant triage --title "Mimikatz execution detected" --source-ip 192.168.100.50 --severity high
+```
+
+[Full documentation →](03-rag-triage-assistant/README.md)
 
 ---
 
@@ -101,7 +122,8 @@ Generates STRIDE/MITRE ATT&CK threat models from architecture diagrams and servi
 | Data Flow | Source | Destination | What Moves |
 |-----------|--------|-------------|------------|
 | Enriched IOCs → rule context | Module 01 | Module 02 | High-risk IOCs as input to rule generation |
-| SIGMA rules → triage context | Module 02 | Module 03 | Generated `.yml` rules loaded into RAG vector store |
+| Enriched IOCs → triage context | Module 01 | Module 03 | Enriched IOC JSON/NDJSON indexed into the `ioc_enrichment` ChromaDB collection |
+| SIGMA rules → triage context | Module 02 | Module 03 | Generated `.yml` rules indexed into the `sigma_rules` ChromaDB collection |
 | Anomaly alerts → triage queue | Module 04 | Module 03 | Scored anomalies submitted for LLM-assisted triage |
 | Threat model gaps → rules | Module 05 | Module 02 | Uncovered attack paths used as rule generation prompts |
 
@@ -120,6 +142,7 @@ Each module loads secrets from a local file that is gitignored. Never hardcode A
 |--------|-------------|---------------|
 | 01 | `config/secrets.pem` | `VT_API_KEY`, `ABUSEIPDB_API_KEY`, `SHODAN_API_KEY`, `OTX_API_KEY`, `URLSCAN_API_KEY` |
 | 02 | `.env` | `ANTHROPIC_API_KEY` |
+| 03 | `.env` or `config/config.yaml` | `ANTHROPIC_API_KEY` |
 
 Shell environment variables always take priority over file-based secrets.
 
@@ -131,6 +154,8 @@ Shell environment variables always take priority over file-based secrets.
 | Data models | Pydantic v2 | Runtime validation, serialization, IDE support |
 | Async I/O | asyncio + aiohttp | Concurrent provider calls without thread overhead |
 | LLM | Anthropic Claude (claude-sonnet-4-6) | Best-in-class reasoning for security analysis |
+| Vector store | ChromaDB + local SentenceTransformer embeddings | RAG retrieval without an embedding API dependency |
+| Web API | FastAPI + uvicorn | Async webhook ingestion from Splunk/Elastic, auto-generated docs |
 | Logging | structlog | JSON structured logs, compatible with SIEM ingestion |
 | CLI | Click + Rich | Composable commands, readable terminal output |
 | Testing | pytest + pytest-asyncio | Async test support, full API mocking |

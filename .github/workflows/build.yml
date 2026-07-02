@@ -1,31 +1,54 @@
-name: SonarQube Analysis
+name: Sonar Scanner Code Analysis
 
 on:
   push:
-    branches: [ "main" ]
+    branches:
+      - main
   pull_request:
-    branches: [ "main" ]
+    types: [opened, synchronize, reopened]
 
 permissions:
   contents: read
 
 jobs:
-  sonarqube:
+  sonar-scan:
+    name: SonarQube Scan
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+    
     steps:
-      - name: Checkout code
+      - name: Checkout Source Code
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0 # Required for better relevancy of analysis
+          fetch-depth: 0 # Shallow clones must be disabled for relevant blame information
 
-      - name: SonarQube Scan
-        uses: sonarsource/sonarqube-scan-action@v6
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Run tests with coverage - 01-ioc-enrichment-pipeline
+        working-directory: 01-ioc-enrichment-pipeline
+        run: |
+          pip install -r requirements.txt
+          pytest --cov=ioc_enricher --cov-report=xml:coverage.xml
+
+      - name: Run tests with coverage - 02-sigma-rule-generator
+        working-directory: 02-sigma-rule-generator
+        run: |
+          pip install -r requirements.txt
+          pytest --cov=sigma_generator --cov-report=xml:coverage.xml
+
+      - name: Run tests with coverage - 03-rag-triage-assistant
+        working-directory: 03-rag-triage-assistant
+        run: |
+          pip install -r requirements.txt
+          pytest --cov=triage_assistant --cov-report=xml:coverage.xml
+
+      - name: Execute SonarQube Scan
+        uses: sonarsource/sonarqube-scan-action@v4
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-
-#      - name: SonarQube Quality Gate Check
-#        uses: sonarsource/sonarqube-quality-gate-action@v1
-#        timeout-minutes: 5
-#        env:
-#          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-#          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}

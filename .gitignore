@@ -1,5 +1,28 @@
-02-sigma-rule-generator/.env
-
+# Secrets / local config
+.env
+**/.env
 01-ioc-enrichment-pipeline/config/config.yaml
 01-ioc-enrichment-pipeline/config/secrets.pem
 02-sigma-rule-generator/config/config.yaml
+03-rag-triage-assistant/config/config.yaml
+
+# Generated vector store data
+03-rag-triage-assistant/data/chroma/
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+dist/
+build/
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Virtual environments
+.venv/
+venv/
+env/
