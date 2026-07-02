@@ -1,0 +1,56 @@
+# ---------------------------------------------------------------------------
+# triage-assistant configuration
+# Copy to config/config.yaml and fill in your values.
+# Environment variables always override file values.
+# ---------------------------------------------------------------------------
+
+vector_store:
+  # Directory where ChromaDB persists its data files.
+  # Override with env: TRIAGE_CHROMA_DIR
+  persist_directory: "./data/chroma"
+
+  # SentenceTransformer model for local embeddings (no API key required).
+  # Change to "text-embedding-3-small" and update vector_store.py if you
+  # want to use the OpenAI embedding function for production.
+  embedding_model: "all-MiniLM-L6-v2"
+
+  # Maximum results returned from each knowledge base collection per query.
+  n_results_per_collection: 5
+
+llm:
+  # Anthropic API key — REQUIRED.
+  # Override with env: ANTHROPIC_API_KEY (recommended — do not commit this value).
+  api_key: ""
+
+  # Claude model to use for triage reasoning.
+  # claude-sonnet-4-20250514 balances speed, cost, and reasoning quality.
+  model: "claude-sonnet-4-6"
+
+  # Maximum tokens in the triage response (2048 is sufficient for JSON output).
+  max_tokens: 2048
+
+  # Temperature 0 produces deterministic, consistent JSON output.
+  temperature: 0.0
+
+api:
+  # Host and port for the FastAPI server started by `triage-assistant serve`.
+  # Override port with env: TRIAGE_PORT
+  host: "0.0.0.0"
+  port: 8000
+
+  # CORS origins. Use ["*"] for lab/demo. Restrict in production.
+  cors_origins:
+    - "*"
+
+triage:
+  # Verdict returned when the pipeline encounters an unrecoverable error.
+  default_verdict_on_error: "needs_investigation"
+
+  # Minimum number of context documents required to proceed with LLM triage.
+  # If the vector store is empty and returns 0, triage still runs but notes
+  # the missing context in analyst_notes.
+  min_context_documents: 1
+
+  # Log level: DEBUG, INFO, WARNING, ERROR
+  # Override with env: LOG_LEVEL
+  log_level: "INFO"
