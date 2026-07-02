@@ -24,6 +24,29 @@ jobs:
         with:
           fetch-depth: 0 # Shallow clones must be disabled for relevant blame information
 
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Run tests with coverage - 01-ioc-enrichment-pipeline
+        working-directory: 01-ioc-enrichment-pipeline
+        run: |
+          pip install -r requirements.txt
+          pytest --cov=ioc_enricher --cov-report=xml:coverage.xml
+
+      - name: Run tests with coverage - 02-sigma-rule-generator
+        working-directory: 02-sigma-rule-generator
+        run: |
+          pip install -r requirements.txt
+          pytest --cov=sigma_generator --cov-report=xml:coverage.xml
+
+      - name: Run tests with coverage - 03-rag-triage-assistant
+        working-directory: 03-rag-triage-assistant
+        run: |
+          pip install -r requirements.txt
+          pytest --cov=triage_assistant --cov-report=xml:coverage.xml
+
       - name: Execute SonarQube Scan
         uses: sonarsource/sonarqube-scan-action@v4
         env:
