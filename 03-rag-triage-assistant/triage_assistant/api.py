@@ -163,7 +163,10 @@ async def ingest_iocs(body: dict[str, str]) -> dict[str, Any]:
     Body: ``{"path": "/path/to/ioc/files"}``
     """
     assistant = _get_assistant()
-    path = body.get("path", "")
+    raw_path = body.get("path", "")
+    if not isinstance(raw_path, str):
+        raise HTTPException(status_code=422, detail="'path' field must be a string")
+    path = raw_path.strip()
     if not path:
         raise HTTPException(status_code=422, detail="'path' field is required")
     try:
@@ -185,7 +188,10 @@ async def ingest_sigma(body: dict[str, str]) -> dict[str, Any]:
     Body: ``{"path": "/path/to/sigma/rules"}``
     """
     assistant = _get_assistant()
-    path = body.get("path", "")
+    raw_path = body.get("path", "")
+    if not isinstance(raw_path, str):
+        raise HTTPException(status_code=422, detail="'path' field must be a string")
+    path = raw_path.strip()
     if not path:
         raise HTTPException(status_code=422, detail="'path' field is required")
     try:
